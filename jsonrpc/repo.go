@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"net/http"
+	"runtime"
 	"sync"
 
 	"github.com/golang/protobuf/jsonpb"
@@ -45,7 +46,7 @@ func (repo *Repo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	requests, err := prepareRequests(body, batch)
 	if err != nil {
-		sendResponse(w, batch, errorResponse(nil, ErrParseError(err.Error())))
+		sendResponse(w, batch, errorResponse(nil, ErrInvalidRequest(err.Error())))
 		return
 	}
 
@@ -59,23 +60,35 @@ func (repo *Repo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (repo *Repo) handleRequests(ctx context.Context, requests []*request) ([]*response, error) {
-	responses := make([]*response, 0, len(requests))
-
-	wg := new(sync.WaitGroup)
-	responseChan := make(chan *response, len(requests))
-
-	for _, req := range requests {
-		wg.Add(1)
-		go func(ctx context.Context, wg *sync.WaitGroup, req *request, result chan<- *response) {
-			defer wg.Done()
-			res := repo.handleRequest(ctx, req)
-			result <- res
-		}(ctx, wg, req, responseChan)
+	if len(requests) == 0 {
+		return make([]*response, 0), nil
 	}
 
+	wg := new(sync.WaitGroup)
+	requestChan := make(chan *request, len(requests))
+	responseChan := make(chan *response, len(requests))
+
+	var workerCount int
+	if len(requests) < runtime.NumCPU() {
+		workerCount = len(requests)
+	} else {
+		workerCount = runtime.NumCPU()
+	}
+
+	for w := 0; w < workerCount; w++ {
+		wg.Add(1)
+		go repo.handleWorker(ctx, wg, requestChan, responseChan)
+	}
+
+	for _, req := range requests {
+		requestChan <- req
+	}
+
+	close(requestChan)
 	wg.Wait()
 	close(responseChan)
 
+	responses := make([]*response, 0, len(requests))
 	for res := range responseChan {
 		if res != nil {
 			responses = append(responses, res)
@@ -83,6 +96,14 @@ func (repo *Repo) handleRequests(ctx context.Context, requests []*request) ([]*r
 	}
 
 	return responses, nil
+}
+
+func (repo *Repo) handleWorker(ctx context.Context, wg *sync.WaitGroup, requests <-chan *request, responses chan<- *response) {
+	defer wg.Done()
+	for req := range requests {
+		res := repo.handleRequest(ctx, req)
+		responses <- res
+	}
 }
 
 func (repo *Repo) handleRequest(ctx context.Context, req *request) *response {
