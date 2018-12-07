@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -17,25 +18,45 @@ import (
 	"github.com/reviz0r/jsonrpc-gateway/example/service"
 )
 
+var (
+	grpcPort = "50051"
+	jrpcPort = "8080"
+)
+
 func main() {
+	if port := os.Getenv("GRPC_PORT"); port != "" {
+		grpcPort = port
+	}
+
+	if port := os.Getenv("JRPC_PORT"); port != "" {
+		jrpcPort = port
+	}
+
 	ctx, wg := grace()
 
-	listen, err := net.Listen("tcp", ":50051")
+	address := fmt.Sprintf(":%s", grpcPort)
+	listen, err := net.Listen("tcp", address)
 	if err != nil {
-		log.Fatalf("Failed to listen")
+		log.Fatalf("Failed to listen port %s: %s", grpcPort, err)
 	}
 
 	server := grpc.NewServer()
 	service.RegisterTimeServer(server, new(Service))
 
 	repo := jsonrpc.New()
-	repo.RegisterService(&service.TimeService{Address: "localhost:50051", Opts: []grpc.DialOption{grpc.WithInsecure()}})
+
+	repo.RegisterService(
+		&service.TimeService{
+			Address: fmt.Sprintf("localhost:%s", grpcPort),
+			Opts:    []grpc.DialOption{grpc.WithInsecure()},
+		},
+	)
 
 	mux := http.NewServeMux()
 	mux.Handle("/rpc", repo)
 
 	jsonrpcServer := http.Server{
-		Addr:    ":8090",
+		Addr:    fmt.Sprintf(":%s", jrpcPort),
 		Handler: mux,
 	}
 
