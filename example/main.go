@@ -54,6 +54,9 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.Handle("/rpc", repo)
+	mux.HandleFunc("/doc", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./index.html")
+	})
 
 	jsonrpcServer := http.Server{
 		Addr:    fmt.Sprintf(":%s", jrpcPort),
