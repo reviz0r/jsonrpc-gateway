@@ -2,12 +2,17 @@ syntax = "proto3";
 
 package service;
 
+// Сервис времени
 service Time {
+	// Засыпает на указанный промежуток времени
 	rpc Sleep (Request) returns (Response);
 }
 
+// Запрос
 message Request {
+	// Продолжительность сна
 	string duration = 1;
 }
 
+// Ответ (пустой)
 message Response {}

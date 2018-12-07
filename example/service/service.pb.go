@@ -33,7 +33,9 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
+// Запрос
 type Request struct {
+	// Продолжительность сна
 	Duration string `protobuf:"bytes,1,opt,name=duration" json:"duration,omitempty"`
 }
 
@@ -49,6 +51,7 @@ func (m *Request) GetDuration() string {
 	return ""
 }
 
+// Ответ (пустой)
 type Response struct {
 }
 
@@ -73,6 +76,7 @@ const _ = grpc.SupportPackageIsVersion4
 // Client API for Time service
 
 type TimeClient interface {
+	// Засыпает на указанный промежуток времени
 	Sleep(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
 }
 
@@ -96,6 +100,7 @@ func (c *timeClient) Sleep(ctx context.Context, in *Request, opts ...grpc.CallOp
 // Server API for Time service
 
 type TimeServer interface {
+	// Засыпает на указанный промежуток времени
 	Sleep(context.Context, *Request) (*Response, error)
 }
 
