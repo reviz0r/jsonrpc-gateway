@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package service;
+
+service Time {
+	rpc Sleep (Request) returns (Response);
+}
+
+message Request {
+	string duration = 1;
+}
+
+message Response {}
