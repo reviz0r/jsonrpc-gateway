@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"net/http"
+	"sync"
 
 	"github.com/golang/protobuf/jsonpb"
 )
@@ -48,24 +49,46 @@ func (repo *Repo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	responses := make([]*response, 0)
-	for _, req := range requests {
-		res := repo.handleRequest(req)
-		if res != nil {
-			responses = append(responses, res)
-		}
+	responses, err := repo.handleRequests(r.Context(), requests)
+	if err != nil {
+		sendResponse(w, batch, errorResponse(nil, ErrInternalError(err.Error())))
+		return
 	}
 
 	sendResponse(w, batch, responses...)
 }
 
-func (repo *Repo) handleRequest(req *request) *response {
+func (repo *Repo) handleRequests(ctx context.Context, requests []*request) ([]*response, error) {
+	responses := make([]*response, 0, len(requests))
+
+	wg := new(sync.WaitGroup)
+	responseChan := make(chan *response, len(requests))
+
+	for _, req := range requests {
+		wg.Add(1)
+		go func(ctx context.Context, wg *sync.WaitGroup, req *request, result chan<- *response) {
+			defer wg.Done()
+			res := repo.handleRequest(ctx, req)
+			result <- res
+		}(ctx, wg, req, responseChan)
+	}
+
+	wg.Wait()
+	close(responseChan)
+
+	for res := range responseChan {
+		if res != nil {
+			responses = append(responses, res)
+		}
+	}
+
+	return responses, nil
+}
+
+func (repo *Repo) handleRequest(ctx context.Context, req *request) *response {
 	if err := req.validate(); err != nil {
 		return errorResponse(req.ID, ErrInvalidRequest(err.Error()))
 	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	ctx = context.WithValue(ctx, requestID, req.ID)
 	params := bytes.NewBuffer(req.Params)
