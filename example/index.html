@@ -179,11 +179,19 @@
             <ul>
               
                 <li>
-                  <a href="#service.Request"><span class="badge">M</span>Request</a>
+                  <a href="#service.NowRequest"><span class="badge">M</span>NowRequest</a>
                 </li>
               
                 <li>
-                  <a href="#service.Response"><span class="badge">M</span>Response</a>
+                  <a href="#service.NowResponse"><span class="badge">M</span>NowResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#service.SleepRequest"><span class="badge">M</span>SleepRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#service.SleepResponse"><span class="badge">M</span>SleepResponse</a>
                 </li>
               
               
@@ -208,7 +216,60 @@
       <p></p>
 
       
-        <h3 id="service.Request">Request</h3>
+        <h3 id="service.NowRequest">NowRequest</h3>
+        <p>Запрос текущего времени сервера</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>location</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Локация </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+        
+
+        
+      
+        <h3 id="service.NowResponse">NowResponse</h3>
+        <p>Ответ с текущим временем сервера</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>location</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Локация </p></td>
+                </tr>
+              
+                <tr>
+                  <td>now</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Текущее время </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+        
+
+        
+      
+        <h3 id="service.SleepRequest">SleepRequest</h3>
         <p>Запрос</p>
 
         
@@ -231,9 +292,25 @@
 
         
       
-        <h3 id="service.Response">Response</h3>
-        <p>Ответ (пустой)</p>
+        <h3 id="service.SleepResponse">SleepResponse</h3>
+        <p>Ответ</p>
 
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>result</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Результат сна </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
         
 
         
@@ -253,9 +330,16 @@
           <tbody>
             
               <tr>
+                <td>Now</td>
+                <td><a href="#service.NowRequest">NowRequest</a></td>
+                <td><a href="#service.NowResponse">NowResponse</a></td>
+                <td><p>Возвращает текущее время сервера в указанной локации</p></td>
+              </tr>
+            
+              <tr>
                 <td>Sleep</td>
-                <td><a href="#service.Request">Request</a></td>
-                <td><a href="#service.Response">Response</a></td>
+                <td><a href="#service.SleepRequest">SleepRequest</a></td>
+                <td><a href="#service.SleepResponse">SleepResponse</a></td>
                 <td><p>Засыпает на указанный промежуток времени</p></td>
               </tr>
             

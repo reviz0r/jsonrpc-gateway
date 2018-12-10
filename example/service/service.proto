@@ -4,15 +4,34 @@ package service;
 
 // Сервис времени
 service Time {
+	// Возвращает текущее время сервера в указанной локации
+	rpc Now (NowRequest) returns (NowResponse);
 	// Засыпает на указанный промежуток времени
-	rpc Sleep (Request) returns (Response);
+	rpc Sleep (SleepRequest) returns (SleepResponse);
+}
+
+// Запрос текущего времени сервера
+message NowRequest {
+	// Локация
+	string location = 1;
+}
+
+// Ответ с текущим временем сервера
+message NowResponse {
+	// Локация
+	string location = 1;
+	// Текущее время
+	string now      = 2;
 }
 
 // Запрос
-message Request {
+message SleepRequest {
 	// Продолжительность сна
 	string duration = 1;
 }
 
-// Ответ (пустой)
-message Response {}
+// Ответ
+message SleepResponse {
+	// Результат сна
+	string result = 1;
+}

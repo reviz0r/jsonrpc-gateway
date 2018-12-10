@@ -65,6 +65,22 @@ func (s *TimeService) Exec(ctx context.Context, method string, params io.Reader)
 func (s *TimeService) methods() map[jsonrpc.MethodTag]jsonrpc.Method {
 	return map[jsonrpc.MethodTag]jsonrpc.Method{
 
+		jsonrpc.MethodTag{Service: "Time", Method: "Now"}: func(ctx context.Context, params io.Reader) (proto.Message, error) {
+			conn, err := grpc.Dial(s.Address, s.Opts...)
+			if err != nil {
+				return nil, err
+			}
+			defer conn.Close()
+
+			client := NewTimeClient(conn)
+			in := new(NowRequest)
+			err = jsonpb.Unmarshal(params, in)
+			if err != nil {
+				return nil, jsonrpc.ErrInvalidRequest(err.Error())
+			}
+			return client.Now(ctx, in)
+		},
+
 		jsonrpc.MethodTag{Service: "Time", Method: "Sleep"}: func(ctx context.Context, params io.Reader) (proto.Message, error) {
 			conn, err := grpc.Dial(s.Address, s.Opts...)
 			if err != nil {
@@ -73,7 +89,7 @@ func (s *TimeService) methods() map[jsonrpc.MethodTag]jsonrpc.Method {
 			defer conn.Close()
 
 			client := NewTimeClient(conn)
-			in := new(Request)
+			in := new(SleepRequest)
 			err = jsonpb.Unmarshal(params, in)
 			if err != nil {
 				return nil, jsonrpc.ErrInvalidRequest(err.Error())

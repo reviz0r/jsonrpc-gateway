@@ -8,8 +8,10 @@ It is generated from these files:
 	service/service.proto
 
 It has these top-level messages:
-	Request
-	Response
+	NowRequest
+	NowResponse
+	SleepRequest
+	SleepResponse
 */
 package service
 
@@ -33,36 +35,92 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
+// Запрос текущего времени сервера
+type NowRequest struct {
+	// Локация
+	Location string `protobuf:"bytes,1,opt,name=location" json:"location,omitempty"`
+}
+
+func (m *NowRequest) Reset()                    { *m = NowRequest{} }
+func (m *NowRequest) String() string            { return proto.CompactTextString(m) }
+func (*NowRequest) ProtoMessage()               {}
+func (*NowRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+
+func (m *NowRequest) GetLocation() string {
+	if m != nil {
+		return m.Location
+	}
+	return ""
+}
+
+// Ответ с текущим временем сервера
+type NowResponse struct {
+	// Локация
+	Location string `protobuf:"bytes,1,opt,name=location" json:"location,omitempty"`
+	// Текущее время
+	Now string `protobuf:"bytes,2,opt,name=now" json:"now,omitempty"`
+}
+
+func (m *NowResponse) Reset()                    { *m = NowResponse{} }
+func (m *NowResponse) String() string            { return proto.CompactTextString(m) }
+func (*NowResponse) ProtoMessage()               {}
+func (*NowResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+
+func (m *NowResponse) GetLocation() string {
+	if m != nil {
+		return m.Location
+	}
+	return ""
+}
+
+func (m *NowResponse) GetNow() string {
+	if m != nil {
+		return m.Now
+	}
+	return ""
+}
+
 // Запрос
-type Request struct {
+type SleepRequest struct {
 	// Продолжительность сна
 	Duration string `protobuf:"bytes,1,opt,name=duration" json:"duration,omitempty"`
 }
 
-func (m *Request) Reset()                    { *m = Request{} }
-func (m *Request) String() string            { return proto.CompactTextString(m) }
-func (*Request) ProtoMessage()               {}
-func (*Request) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (m *SleepRequest) Reset()                    { *m = SleepRequest{} }
+func (m *SleepRequest) String() string            { return proto.CompactTextString(m) }
+func (*SleepRequest) ProtoMessage()               {}
+func (*SleepRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
 
-func (m *Request) GetDuration() string {
+func (m *SleepRequest) GetDuration() string {
 	if m != nil {
 		return m.Duration
 	}
 	return ""
 }
 
-// Ответ (пустой)
-type Response struct {
+// Ответ
+type SleepResponse struct {
+	// Результат сна
+	Result string `protobuf:"bytes,1,opt,name=result" json:"result,omitempty"`
 }
 
-func (m *Response) Reset()                    { *m = Response{} }
-func (m *Response) String() string            { return proto.CompactTextString(m) }
-func (*Response) ProtoMessage()               {}
-func (*Response) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+func (m *SleepResponse) Reset()                    { *m = SleepResponse{} }
+func (m *SleepResponse) String() string            { return proto.CompactTextString(m) }
+func (*SleepResponse) ProtoMessage()               {}
+func (*SleepResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+
+func (m *SleepResponse) GetResult() string {
+	if m != nil {
+		return m.Result
+	}
+	return ""
+}
 
 func init() {
-	proto.RegisterType((*Request)(nil), "service.Request")
-	proto.RegisterType((*Response)(nil), "service.Response")
+	proto.RegisterType((*NowRequest)(nil), "service.NowRequest")
+	proto.RegisterType((*NowResponse)(nil), "service.NowResponse")
+	proto.RegisterType((*SleepRequest)(nil), "service.SleepRequest")
+	proto.RegisterType((*SleepResponse)(nil), "service.SleepResponse")
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -76,8 +134,10 @@ const _ = grpc.SupportPackageIsVersion4
 // Client API for Time service
 
 type TimeClient interface {
+	// Возвращает текущее время сервера в указанной локации
+	Now(ctx context.Context, in *NowRequest, opts ...grpc.CallOption) (*NowResponse, error)
 	// Засыпает на указанный промежуток времени
-	Sleep(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
+	Sleep(ctx context.Context, in *SleepRequest, opts ...grpc.CallOption) (*SleepResponse, error)
 }
 
 type timeClient struct {
@@ -88,8 +148,17 @@ func NewTimeClient(cc *grpc.ClientConn) TimeClient {
 	return &timeClient{cc}
 }
 
-func (c *timeClient) Sleep(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error) {
-	out := new(Response)
+func (c *timeClient) Now(ctx context.Context, in *NowRequest, opts ...grpc.CallOption) (*NowResponse, error) {
+	out := new(NowResponse)
+	err := grpc.Invoke(ctx, "/service.Time/Now", in, out, c.cc, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *timeClient) Sleep(ctx context.Context, in *SleepRequest, opts ...grpc.CallOption) (*SleepResponse, error) {
+	out := new(SleepResponse)
 	err := grpc.Invoke(ctx, "/service.Time/Sleep", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
@@ -100,16 +169,36 @@ func (c *timeClient) Sleep(ctx context.Context, in *Request, opts ...grpc.CallOp
 // Server API for Time service
 
 type TimeServer interface {
+	// Возвращает текущее время сервера в указанной локации
+	Now(context.Context, *NowRequest) (*NowResponse, error)
 	// Засыпает на указанный промежуток времени
-	Sleep(context.Context, *Request) (*Response, error)
+	Sleep(context.Context, *SleepRequest) (*SleepResponse, error)
 }
 
 func RegisterTimeServer(s *grpc.Server, srv TimeServer) {
 	s.RegisterService(&_Time_serviceDesc, srv)
 }
 
+func _Time_Now_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NowRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TimeServer).Now(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/service.Time/Now",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TimeServer).Now(ctx, req.(*NowRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Time_Sleep_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Request)
+	in := new(SleepRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -121,7 +210,7 @@ func _Time_Sleep_Handler(srv interface{}, ctx context.Context, dec func(interfac
 		FullMethod: "/service.Time/Sleep",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TimeServer).Sleep(ctx, req.(*Request))
+		return srv.(TimeServer).Sleep(ctx, req.(*SleepRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -130,6 +219,10 @@ var _Time_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "service.Time",
 	HandlerType: (*TimeServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Now",
+			Handler:    _Time_Now_Handler,
+		},
 		{
 			MethodName: "Sleep",
 			Handler:    _Time_Sleep_Handler,
@@ -142,13 +235,18 @@ var _Time_serviceDesc = grpc.ServiceDesc{
 func init() { proto.RegisterFile("service/service.proto", fileDescriptor0) }
 
 var fileDescriptor0 = []byte{
-	// 125 bytes of a gzipped FileDescriptorProto
+	// 197 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0x2d, 0x4e, 0x2d, 0x2a,
 	0xcb, 0x4c, 0x4e, 0xd5, 0x87, 0xd2, 0x7a, 0x05, 0x45, 0xf9, 0x25, 0xf9, 0x42, 0xec, 0x50, 0xae,
-	0x92, 0x2a, 0x17, 0x7b, 0x50, 0x6a, 0x61, 0x69, 0x6a, 0x71, 0x89, 0x90, 0x14, 0x17, 0x47, 0x4a,
-	0x69, 0x51, 0x62, 0x49, 0x66, 0x7e, 0x9e, 0x04, 0xa3, 0x02, 0xa3, 0x06, 0x67, 0x10, 0x9c, 0xaf,
-	0xc4, 0xc5, 0xc5, 0x11, 0x94, 0x5a, 0x5c, 0x90, 0x9f, 0x57, 0x9c, 0x6a, 0x64, 0xc2, 0xc5, 0x12,
-	0x92, 0x99, 0x9b, 0x2a, 0xa4, 0xc3, 0xc5, 0x1a, 0x9c, 0x93, 0x9a, 0x5a, 0x20, 0x24, 0xa0, 0x07,
-	0x33, 0x1c, 0x6a, 0x94, 0x94, 0x20, 0x92, 0x08, 0x44, 0x57, 0x12, 0x1b, 0xd8, 0x62, 0x63, 0x40,
-	0x00, 0x00, 0x00, 0xff, 0xff, 0x67, 0x7a, 0xc8, 0x1c, 0x91, 0x00, 0x00, 0x00,
+	0x92, 0x06, 0x17, 0x97, 0x5f, 0x7e, 0x79, 0x50, 0x6a, 0x61, 0x69, 0x6a, 0x71, 0x89, 0x90, 0x14,
+	0x17, 0x47, 0x4e, 0x7e, 0x72, 0x62, 0x49, 0x66, 0x7e, 0x9e, 0x04, 0xa3, 0x02, 0xa3, 0x06, 0x67,
+	0x10, 0x9c, 0xaf, 0x64, 0xcd, 0xc5, 0x0d, 0x56, 0x59, 0x5c, 0x90, 0x9f, 0x57, 0x9c, 0x8a, 0x4f,
+	0xa9, 0x90, 0x00, 0x17, 0x73, 0x5e, 0x7e, 0xb9, 0x04, 0x13, 0x58, 0x18, 0xc4, 0x54, 0xd2, 0xe2,
+	0xe2, 0x09, 0xce, 0x49, 0x4d, 0x2d, 0x40, 0xb2, 0x28, 0xa5, 0xb4, 0x08, 0x45, 0x37, 0x8c, 0xaf,
+	0xa4, 0xce, 0xc5, 0x0b, 0x55, 0x0b, 0xb5, 0x4a, 0x8c, 0x8b, 0xad, 0x28, 0xb5, 0xb8, 0x34, 0xa7,
+	0x04, 0xaa, 0x14, 0xca, 0x33, 0x2a, 0xe0, 0x62, 0x09, 0xc9, 0xcc, 0x4d, 0x15, 0x32, 0xe0, 0x62,
+	0xf6, 0xcb, 0x2f, 0x17, 0x12, 0xd6, 0x83, 0xf9, 0x11, 0xe1, 0x23, 0x29, 0x11, 0x54, 0x41, 0xa8,
+	0x89, 0x66, 0x5c, 0xac, 0x60, 0x2b, 0x84, 0x44, 0xe1, 0xd2, 0xc8, 0xce, 0x93, 0x12, 0x43, 0x17,
+	0x86, 0xe8, 0x4b, 0x62, 0x03, 0x87, 0x9e, 0x31, 0x20, 0x00, 0x00, 0xff, 0xff, 0x2c, 0x53, 0x9d,
+	0x4f, 0x56, 0x01, 0x00, 0x00,
 }
