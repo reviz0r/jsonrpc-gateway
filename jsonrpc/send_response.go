@@ -3,10 +3,12 @@ package jsonrpc
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
+	"google.golang.org/grpc/status"
 )
 
 func sendResponse(w http.ResponseWriter, batch bool, res ...*response) {
@@ -43,9 +45,21 @@ func successResponse(marshaler *jsonpb.Marshaler, id json.RawMessage, result pro
 }
 
 func errorResponse(id json.RawMessage, err error) *response {
-	structError, ok := err.(*Error)
-	if !ok {
-		structError = ErrInternalError(nil)
+	var structError *Error
+	status, ok := status.FromError(err)
+	if ok {
+		structError = &Error{
+			Code:    serverError.Int() - int(status.Code()),
+			Message: serverError.String(),
+			Data:    fmt.Sprintf("%s: %s", status.Code().String(), status.Message()),
+		}
+	}
+
+	if structError == nil {
+		structError, ok = err.(*Error)
+		if !ok {
+			structError = ErrInternalError(err.Error())
+		}
 	}
 
 	return &response{
