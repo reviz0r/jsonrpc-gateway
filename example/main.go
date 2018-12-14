@@ -53,7 +53,7 @@ func main() {
 	)
 
 	mux := http.NewServeMux()
-	mux.Handle("/rpc", repo)
+	mux.Handle("/rpc", loggerMiddleware(repo))
 	mux.HandleFunc("/doc", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeFile(w, r, "./index.html")
 	})
